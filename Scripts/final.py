@@ -1,7 +1,7 @@
 # Importing the Required Libraries
 import cv2  # Open-CV used for the overall operation
 import imutils  # Used for resizing the frame
-import numpy as np  # Used for numric calculations
+import numpy as np  # Used for numeric calculations
 import time  # Used in printing the Output after a specific period.
 from control import Control as c  # User Defined package for implementing Conto\rols
 from sklearn.metrics import pairwise  # Used to calculate eucledian distance between two points
@@ -26,7 +26,7 @@ cv2.createTrackbar('s', 'Result', 0, 255, nothing)
 cv2.createTrackbar('v', 'Result', 0, 255, nothing)
 cv2.createTrackbar('Start', 'Result', 0, 1, nothing)
 
-# Defining the vertices of regionof interest
+# Defining the vertices of region of interest
 top, right, bottom, left = 0, 700, 525, 240
 
 # Creating an object of class Control
@@ -70,8 +70,8 @@ while 1:
 
         # Finding Contours
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
-        ret, thresh = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
-        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        # ret, thresh = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         cnt = max(contours, key=lambda x: cv2.contourArea(x))
 
         # Approx the contour a little
@@ -92,11 +92,10 @@ while 1:
         cY = int((extreme_top[1] + extreme_bottom[1]) / 2)
 
         # Extreme point circles in Convex Hull
-        cv2.drawContours(roi, [hull], -1, (0, 255, 0), 2)
         cv2.circle(roi, (cX, cY), radius=5, color=(255, 0, 0), thickness=3)
         cv2.circle(roi, extreme_left, radius=3, color=(0, 0, 255), thickness=2)
         cv2.circle(roi, extreme_right, radius=3, color=(0, 0, 255), thickness=2)
-        cv2.imshow("Extreme Points in Convex Hull", roi)
+
 
         # FIND EUCLIDEAN DISTANCE FROM CENTER TO EXTREME POINTS
         distances = pairwise.euclidean_distances([(cX, cY)], Y=[extreme_left, extreme_right])[0]
@@ -127,7 +126,16 @@ while 1:
 
         # If the value of Start>0, the control script starts
         if start > 0:
-            ob.startControlling(max_distance, slope)
+            annotate = ob.startControlling(max_distance, slope)
+            cv2.putText(roi,
+                        'Pressed Key: '+annotate,
+                        (20, 40),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1,
+                        (0, 0, 255),
+                        2,
+                        cv2.LINE_4)
+
+        cv2.imshow("Extreme Points in Convex Hull", roi)
 
     except:
         pass
