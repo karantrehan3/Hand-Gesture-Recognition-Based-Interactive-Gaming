@@ -4,6 +4,8 @@ Wouldn’t it be fun, if you could use your hand to control the car in a game? S
 Tested on games like: Need for Speed, GTA 5, Blur, Spiderman.
 **Link for video:** https://drive.google.com/file/d/1Xpey_UYsxnG0eSdDodW2cWsVR_jFOMq6/view?usp=drivesdk
 
+{% include googleDrivePlayer.html %}
+
 The code is well documented at each step and is easy to understand and implement.
 
 **Libraries used:**
