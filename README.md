@@ -1,5 +1,5 @@
 # Hand Gesture Recognition Based Interactive Gaming using Python
-
+{% include meta.html %}
 ![Hand.png](https://github.com/karantrehan3/Hand-Gesture-Recognition-Based-Interactive-Gaming/blob/main/_includes/Hand.png?raw=true)
 
 Wouldn’t it be fun, if you could use your hand to control the car in a game? So, here we have proposed a computer vision concept to control the game with hand gestures by mapping gestures to the W, A, S, D keyboard keys.
