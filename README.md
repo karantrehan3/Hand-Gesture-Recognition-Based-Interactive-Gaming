@@ -1,8 +1,3 @@
----
-title: Hand Gesture Recognition Based Interactive Gaming using Python
-my_image: https://github.com/karantrehan3/Hand-Gesture-Recognition-Based-Interactive-Gaming/blob/main/_includes/Hand.png
----
-
 # Hand Gesture Recognition Based Interactive Gaming using Python
 
 ![Hand.png](https://github.com/karantrehan3/Hand-Gesture-Recognition-Based-Interactive-Gaming/blob/main/_includes/Hand.png?raw=true)
