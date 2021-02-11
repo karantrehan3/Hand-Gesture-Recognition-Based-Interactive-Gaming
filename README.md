@@ -1,3 +1,5 @@
+{% include meta.html %}
+
 # Hand Gesture Recognition Based Interactive Gaming using Python
 
 ![Hand.png](https://github.com/karantrehan3/Hand-Gesture-Recognition-Based-Interactive-Gaming/blob/main/_includes/Hand.png?raw=true)
