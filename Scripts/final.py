@@ -2,17 +2,12 @@
 import cv2  # Open-CV used for the overall operation
 import imutils  # Used for resizing the frame
 import numpy as np  # Used for numeric calculations
-import time  # Used in printing the Output after a specific period.
-from control import Control as c  # User Defined package for implementing Conto\rols
+import time  # Used in printing the Output after a specific period
+from control import Control as c  # User Defined package for implementing Controls
 from sklearn.metrics import pairwise  # Used to calculate eucledian distance between two points
 
 # Using WebCam to get realtime data
 cap = cv2.VideoCapture(0)
-
-
-def nothing(x):
-    pass
-
 
 # Creating a window for later use
 cv2.namedWindow('Result')
@@ -70,6 +65,7 @@ while 1:
 
         # Finding Contours
         mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
+        
         # ret, thresh = cv2.threshold(mask, 127, 255, cv2.THRESH_BINARY)
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         cnt = max(contours, key=lambda x: cv2.contourArea(x))
@@ -77,6 +73,7 @@ while 1:
         # Approx the contour a little
         epsilon = 0.0005 * cv2.arcLength(cnt, True)
         approx = cv2.approxPolyDP(cnt, epsilon, True)
+        
         # For cnt in contours:
         hull = cv2.convexHull(approx)
         cv2.drawContours(roi, [hull], -1, (0, 255, 0), 2)
@@ -106,19 +103,10 @@ while 1:
         x2, y2 = extreme_right
         slope = float((y2 - y1) / (x2 - x1))
 
-        # calculate the radius of the circle with 80% of the max euclidean distance obtained
-        radius = int(0.8 * max_distance)
-
-        # find the circumference of the circle
-        circumference = (2 * np.pi * radius)
-
         millis = int(round(time.time() * 1000))
         seconds = millis / 5
         if seconds % 8 == 0:
-            # print("Euclidean Distances : " + str(distances))
             print("DISTANCE : " + str(round(max_distance, 2)))
-            # print("Radius : " + str(radius))
-            # print("Circumference : " + str(circumference))
             print("SLOPE : ", slope)
 
         # Getting the value of Start from trackbar on the basis of which our control script starts.
