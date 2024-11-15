@@ -1,6 +1,6 @@
 # [Hand Gesture Recognition Based Interactive Gaming using Python](https://karantrehan3.github.io/Hand-Gesture-Recognition-Based-Interactive-Gaming/)
 
-{% include homeButton.html %}
+{% include header.html %}
 
 ![Hand.png](https://repository-images.githubusercontent.com/320211558/8e815900-6cc9-11eb-8fe5-684a95443875?raw=true)
 
