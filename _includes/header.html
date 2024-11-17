@@ -1,2 +1,8 @@
 <iframe title="Header" src="https://karantrehan3.github.io/#/external/header"
-  style="border:none; width:auto; height:auto;" />
+  style="border:none; width:100%; height:auto;" onload="resizeIframe(this)" />
+
+<script>
+  function resizeIframe(iframe) {
+    iframe.style.height = iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }
+</script>
