@@ -664,6 +664,10 @@ python main.py</code></pre>
 
     <script>
     (function () {
+      /* ── Configurable timing (ms) ── */
+      var GESTURE_CYCLE_INTERVAL = 2000;
+      var COPY_FEEDBACK_DURATION = 1500;
+
       /* ── Portfolio nav ── */
       if (new URLSearchParams(location.search).get('ref') === 'portfolio') {
         var nav = document.getElementById('navHome');
@@ -751,7 +755,7 @@ python main.py</code></pre>
         showGesture();
       } else {
         showGesture();
-        setInterval(showGesture, 2000);
+        setInterval(showGesture, GESTURE_CYCLE_INTERVAL);
       }
 
       /* ── Pipeline sequential reveal ── */
@@ -798,7 +802,7 @@ python main.py</code></pre>
           navigator.clipboard.writeText(text).then(function () {
             btn.textContent = 'Copied!';
             btn.classList.add('copied');
-            setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+            setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, COPY_FEEDBACK_DURATION);
           });
         });
       });
