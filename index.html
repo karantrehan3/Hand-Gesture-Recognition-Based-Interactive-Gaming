@@ -181,12 +181,14 @@
         transition: transform .6s var(--ease);
         filter: drop-shadow(0 0 20px var(--accent-glow));
       }
-      .hand-svg.tilt-up { transform: rotate(-15deg) translateY(-8px); }
-      .hand-svg.tilt-left { transform: rotate(-25deg) translateX(-10px); }
-      .hand-svg.tilt-down { transform: rotate(10deg) translateY(8px); }
-      .hand-svg.tilt-right { transform: rotate(20deg) translateX(10px); }
+      .hand-svg.pose-w { transform: rotate(0deg); }
+      .hand-svg.pose-a { transform: rotate(-30deg) translateX(-8px); }
+      .hand-svg.pose-d { transform: rotate(30deg) translateX(8px); }
+      .hand-svg.pose-s { transform: rotate(0deg) translateY(6px); }
       .hand-svg .palm { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
       .hand-svg .finger { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+      .hand-pose { display: none; }
+      .hand-pose.active { display: block; }
       .hand-svg .pulse-ring {
         fill: none; stroke: var(--accent); stroke-width: 1;
         opacity: 0; transform-origin: center;
@@ -433,18 +435,30 @@
           <div class="gesture-vis" role="img" aria-label="Animated hand gesture controlling WASD keys">
             <div class="hand-stage">
               <svg class="hand-svg" id="handSvg" viewBox="0 0 120 140" aria-hidden="true">
-                <!-- Pulse rings -->
                 <circle class="pulse-ring" id="pulseRing" cx="60" cy="80" r="50" />
-                <!-- Palm -->
-                <rect class="palm" x="30" y="65" width="60" height="48" rx="18" />
-                <!-- Fingers -->
-                <line class="finger" x1="40" y1="67" x2="40" y2="38" />
-                <line class="finger" x1="52" y1="67" x2="50" y2="28" />
-                <line class="finger" x1="64" y1="67" x2="66" y2="30" />
-                <line class="finger" x1="76" y1="67" x2="80" y2="36" />
-                <!-- Thumb -->
-                <line class="finger" x1="32" y1="80" x2="16" y2="66" />
-                <!-- Signal waves -->
+                <!-- W / A / D: Shaka — thumb + pinky out, middle 3 curled -->
+                <g class="hand-pose active" id="poseShaka">
+                  <rect class="palm" x="30" y="65" width="60" height="48" rx="18" />
+                  <!-- Pinky (extended right) -->
+                  <line class="finger" x1="88" y1="75" x2="108" y2="58" />
+                  <!-- Thumb (extended left) -->
+                  <line class="finger" x1="32" y1="80" x2="14" y2="68" />
+                  <!-- Middle 3 fingers curled (short stubs) -->
+                  <path class="finger" d="M46 66 q-2 -8 0 -14" />
+                  <path class="finger" d="M58 64 q0 -8 2 -14" />
+                  <path class="finger" d="M70 65 q2 -7 4 -12" />
+                </g>
+                <!-- S: Closed fist / palm -->
+                <g class="hand-pose" id="poseFist">
+                  <rect class="palm" x="30" y="60" width="60" height="55" rx="20" />
+                  <!-- Curled fingers across top -->
+                  <path class="finger" d="M38 62 q0 -6 3 -10 q3 -3 6 0 q2 3 0 8" />
+                  <path class="finger" d="M50 58 q0 -6 3 -10 q3 -3 6 0 q2 3 0 8" />
+                  <path class="finger" d="M62 58 q0 -6 3 -10 q3 -3 6 0 q2 3 0 8" />
+                  <path class="finger" d="M74 60 q0 -5 3 -8 q2 -2 4 0 q1 3 0 6" />
+                  <!-- Thumb tucked -->
+                  <path class="finger" d="M32 76 q-4 -4 -4 -10 q0 -4 4 -4" />
+                </g>
                 <g id="signalWaves" opacity=".5">
                   <path d="M96 55 q6 8 0 16" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" />
                   <path d="M102 50 q9 13 0 26" fill="none" stroke="var(--accent)" stroke-width="1" stroke-linecap="round" opacity=".5" />
@@ -459,7 +473,7 @@
               <div class="wasd-key" data-key="D">D</div>
             </div>
 
-            <div class="gesture-label" id="gestureLabel" aria-live="polite">Tilt up &#8594; W</div>
+            <div class="gesture-label" id="gestureLabel" aria-live="polite">Shaka &#8594; W (forward)</div>
           </div>
         </div>
       </div>
@@ -699,16 +713,21 @@ python main.py</code></pre>
       var label = document.getElementById('gestureLabel');
       var keys = document.querySelectorAll('.wasd-key');
 
+      var poseShaka = document.getElementById('poseShaka');
+      var poseFist = document.getElementById('poseFist');
+
       var gestures = [
-        { tilt: 'tilt-up', key: 'W', label: 'Tilt up → W' },
-        { tilt: 'tilt-left', key: 'A', label: 'Tilt left → A' },
-        { tilt: 'tilt-down', key: 'S', label: 'Tilt down → S' },
-        { tilt: 'tilt-right', key: 'D', label: 'Tilt right → D' }
+        { pose: 'shaka', tilt: 'pose-w', key: 'W', label: 'Shaka → W (forward)' },
+        { pose: 'shaka', tilt: 'pose-a', key: 'A', label: 'Tilt left → A' },
+        { pose: 'fist',  tilt: 'pose-s', key: 'S', label: 'Fist → S (back)' },
+        { pose: 'shaka', tilt: 'pose-d', key: 'D', label: 'Tilt right → D' }
       ];
       var gIdx = 0;
 
       function clearGesture() {
-        handSvg.classList.remove('tilt-up', 'tilt-left', 'tilt-down', 'tilt-right');
+        handSvg.classList.remove('pose-w', 'pose-a', 'pose-s', 'pose-d');
+        poseShaka.classList.remove('active');
+        poseFist.classList.remove('active');
         keys.forEach(function (k) { k.classList.remove('active'); });
       }
 
@@ -717,6 +736,8 @@ python main.py</code></pre>
         gIdx = (gIdx + 1) % gestures.length;
 
         clearGesture();
+        if (g.pose === 'fist') { poseFist.classList.add('active'); }
+        else { poseShaka.classList.add('active'); }
         handSvg.classList.add(g.tilt);
         label.textContent = g.label;
 
