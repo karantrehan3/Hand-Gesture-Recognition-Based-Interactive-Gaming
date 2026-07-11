@@ -15,501 +15,630 @@
     <meta property="og:title" content="Hand Gesture Recognition Based Interactive Gaming" />
     <meta
       property="og:description"
-      content="Control games with hand gestures — Python + OpenCV maps your hand to W/A/S/D keys."
+      content="Control games with hand gestures — Python + OpenCV maps your hand to W/A/S/D keys in real time."
     />
-    <meta property="og:image" content="src/assets/thumbnail.png" />
+    <meta property="og:image" content="./src/assets/thumbnail.png" />
     <meta property="og:type" content="website" />
     <style>
+      /* ── Tokens (dark-first) ── */
       :root {
-        --bg: #0c0a14;
-        --surface: #161320;
-        --surface-2: #1f1a2e;
-        --line: #2c2640;
-        --text: #f5f1fb;
-        --muted: #a99fc0;
-        --accent: #ff2d95;
-        --accent-2: #22d3ee;
-        --radius: 18px;
-        --space: clamp(4rem, 3rem + 5vw, 8rem);
-        --ease: cubic-bezier(0.16, 1, 0.3, 1);
-      }
-      * {
-        box-sizing: border-box;
-      }
-      html {
-        scroll-behavior: smooth;
-      }
-      body {
-        margin: 0;
-        background: var(--bg);
-        color: var(--text);
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-        line-height: 1.6;
-        -webkit-font-smoothing: antialiased;
-      }
-      a {
-        color: inherit;
-      }
-      .wrap {
-        max-width: 1080px;
-        margin: 0 auto;
-        padding: 0 1.5rem;
+        --bg: #0a0e0a;
+        --surface: #111a11;
+        --surface-raised: #162016;
+        --border: #1e3a1e;
+        --border-hover: #2e5a2e;
+        --text: #e8f5e8;
+        --text-secondary: #7da87d;
+        --accent: #39ff14;
+        --accent-hover: #4ade80;
+        --accent-subtle: rgba(57,255,20,.07);
+        --accent-glow: rgba(57,255,20,.15);
+        --accent-dim: #1a3a12;
+        --key-active-bg: rgba(57,255,20,.18);
+        --key-active-border: var(--accent);
+        --terminal-bg: #060a06;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --space: clamp(4rem, 3rem + 5vw, 7rem);
+        --ease: cubic-bezier(.16, 1, .3, 1);
+        --mono: 'SF Mono', 'Cascadia Code', 'JetBrains Mono', ui-monospace, 'Fira Code', monospace;
+        --sans: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
       }
 
-      /* Hero */
-      .hero {
-        position: relative;
-        text-align: center;
-        padding: clamp(4rem, 3rem + 6vw, 7rem) 0 var(--space);
-        overflow: hidden;
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #f4f8f4;
+          --surface: #ffffff;
+          --surface-raised: #eaf2ea;
+          --border: #c4d8c4;
+          --border-hover: #8ab48a;
+          --text: #0f1e0f;
+          --text-secondary: #4a6a4a;
+          --accent: #16a34a;
+          --accent-hover: #15803d;
+          --accent-subtle: rgba(22,163,74,.06);
+          --accent-glow: rgba(22,163,74,.1);
+          --accent-dim: #dcfce7;
+          --key-active-bg: rgba(22,163,74,.12);
+          --key-active-border: var(--accent);
+          --terminal-bg: #1a2e1a;
+        }
       }
+      :root[data-theme="dark"] {
+        --bg: #0a0e0a; --surface: #111a11; --surface-raised: #162016;
+        --border: #1e3a1e; --border-hover: #2e5a2e; --text: #e8f5e8;
+        --text-secondary: #7da87d; --accent: #39ff14; --accent-hover: #4ade80;
+        --accent-subtle: rgba(57,255,20,.07); --accent-glow: rgba(57,255,20,.15);
+        --accent-dim: #1a3a12; --key-active-bg: rgba(57,255,20,.18);
+        --key-active-border: var(--accent); --terminal-bg: #060a06;
+      }
+      :root[data-theme="light"] {
+        --bg: #f4f8f4; --surface: #ffffff; --surface-raised: #eaf2ea;
+        --border: #c4d8c4; --border-hover: #8ab48a; --text: #0f1e0f;
+        --text-secondary: #4a6a4a; --accent: #16a34a; --accent-hover: #15803d;
+        --accent-subtle: rgba(22,163,74,.06); --accent-glow: rgba(22,163,74,.1);
+        --accent-dim: #dcfce7; --key-active-bg: rgba(22,163,74,.12);
+        --key-active-border: var(--accent); --terminal-bg: #1a2e1a;
+      }
+
+      /* ── Reset & base ── */
+      *, *::before, *::after { box-sizing: border-box; }
+      html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+      body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.6; }
+      a { color: inherit; }
+      img { max-width: 100%; }
+
+      .wrap { max-width: 1160px; margin: 0 auto; padding: 0 1.5rem; }
+
+      /* ── Portfolio nav ── */
+      .nav-home { position: fixed; top: 1rem; left: 1rem; z-index: 50; display: flex; gap: .5rem; }
+      .nav-btn {
+        display: inline-flex; align-items: center; gap: .35rem; padding: .5rem .9rem;
+        border-radius: 999px; font-size: .85rem; font-weight: 600; font-family: var(--sans);
+        text-decoration: none; color: var(--text); background: color-mix(in srgb, var(--surface) 82%, transparent);
+        border: 1px solid var(--border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        transition: transform .2s var(--ease), border-color .2s var(--ease);
+      }
+      .nav-btn:hover { transform: translateY(-2px); border-color: var(--accent); }
+
+      /* ── Theme toggle ── */
+      .theme-toggle {
+        position: fixed; top: 1rem; right: 1rem; z-index: 50;
+        width: 38px; height: 38px; border-radius: 50%;
+        background: color-mix(in srgb, var(--surface) 82%, transparent);
+        border: 1px solid var(--border); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+        display: grid; place-items: center; cursor: pointer;
+        transition: transform .2s var(--ease), border-color .2s var(--ease);
+        color: var(--text); font-size: 1rem; line-height: 1;
+      }
+      .theme-toggle:hover { transform: translateY(-2px); border-color: var(--accent); }
+      .theme-toggle .icon-sun, .theme-toggle .icon-moon { position: absolute; transition: opacity .2s; }
+      :root[data-theme="light"] .theme-toggle .icon-sun { opacity: 0; }
+      :root[data-theme="light"] .theme-toggle .icon-moon { opacity: 1; }
+      :root[data-theme="dark"] .theme-toggle .icon-sun { opacity: 1; }
+      :root[data-theme="dark"] .theme-toggle .icon-moon { opacity: 0; }
+      @media (prefers-color-scheme: light) {
+        :root:not([data-theme]) .theme-toggle .icon-sun { opacity: 0; }
+        :root:not([data-theme]) .theme-toggle .icon-moon { opacity: 1; }
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme]) .theme-toggle .icon-sun { opacity: 1; }
+        :root:not([data-theme]) .theme-toggle .icon-moon { opacity: 0; }
+      }
+
+      /* ── Hero ── */
+      .hero { position: relative; padding: clamp(3.5rem, 2rem + 5vw, 6rem) 0 var(--space); overflow: hidden; }
       .hero::before {
-        content: '';
-        position: absolute;
-        inset: -40% 0 auto 0;
-        height: 560px;
-        background: radial-gradient(55% 60% at 50% 0%, rgba(255, 45, 149, 0.22), transparent 70%),
-          radial-gradient(45% 50% at 70% 5%, rgba(34, 211, 238, 0.16), transparent 70%);
+        content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%);
+        width: 900px; height: 500px;
+        background: radial-gradient(50% 50% at 50% 50%, var(--accent-glow), transparent 70%);
         pointer-events: none;
       }
-      .badge {
-        width: 132px;
-        height: 132px;
-        filter: drop-shadow(0 18px 40px rgba(0, 0, 0, 0.55));
+      .hero-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; }
+      .hero-text h1 {
+        font-size: clamp(2.2rem, 1rem + 4.5vw, 3.8rem); font-weight: 800;
+        letter-spacing: -.03em; line-height: 1.08; margin: 0; text-wrap: balance;
       }
-      h1 {
-        font-size: clamp(2.5rem, 1.4rem + 5vw, 4.6rem);
-        letter-spacing: -0.03em;
-        margin: 1.4rem 0 0.4rem;
-        font-weight: 800;
-        line-height: 1.05;
+      .hero-text h1 .accent { color: var(--accent); }
+      .hero-text .tagline {
+        color: var(--text-secondary); font-size: clamp(1rem, .9rem + .5vw, 1.2rem);
+        margin: 1rem 0 0; max-width: 38ch; text-wrap: pretty;
       }
-      .tagline {
-        color: var(--muted);
-        font-size: clamp(1.05rem, 0.95rem + 0.6vw, 1.4rem);
-        max-width: 44ch;
-        margin: 0 auto;
-      }
-      .cta {
-        display: flex;
-        gap: 0.8rem;
-        justify-content: center;
-        flex-wrap: wrap;
-        margin-top: 2.2rem;
-      }
+      .hero-actions { display: flex; gap: .7rem; flex-wrap: wrap; margin-top: 1.8rem; }
+
       .btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.85rem 1.6rem;
-        border-radius: 999px;
-        font-weight: 700;
-        text-decoration: none;
-        transition:
-          transform 0.2s var(--ease),
-          background 0.2s var(--ease),
-          border-color 0.2s var(--ease),
-          box-shadow 0.2s var(--ease);
-        border: 1px solid transparent;
+        display: inline-flex; align-items: center; gap: .45rem; padding: .75rem 1.4rem;
+        border-radius: 10px; font-weight: 600; font-size: .92rem; text-decoration: none;
+        border: 1px solid transparent; cursor: pointer;
+        transition: transform .15s var(--ease), background .15s var(--ease), border-color .15s var(--ease), box-shadow .15s var(--ease);
       }
-      .btn:hover {
-        transform: translateY(-2px);
+      .btn:hover { transform: translateY(-1px); }
+      .btn:active { transform: scale(.97); }
+      .btn-primary { background: var(--accent); color: #0a0e0a; font-weight: 700; }
+      .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 4px 24px var(--accent-glow); }
+      .btn-ghost { border-color: var(--border); color: var(--text); background: var(--surface); }
+      .btn-ghost:hover { border-color: var(--border-hover); }
+
+      .hero-stack {
+        display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 1.2rem;
+        color: var(--text-secondary); font-size: .82rem;
       }
-      .btn-primary {
-        background: linear-gradient(120deg, var(--accent), var(--accent-2));
-        color: #0c0a14;
-      }
-      .btn-primary:hover {
-        box-shadow: 0 8px 26px rgba(255, 45, 149, 0.35);
-      }
-      .btn-ghost {
-        border-color: var(--line);
-        color: var(--text);
-        background: var(--surface);
-      }
-      .btn-ghost:hover {
-        border-color: var(--accent-2);
-      }
-      .platforms {
-        margin-top: 1.4rem;
-        color: var(--muted);
-        font-size: 0.9rem;
-      }
-      .platforms strong {
-        color: var(--accent-2);
+      .hero-stack span {
+        padding: .2rem .6rem; border-radius: 6px; background: var(--accent-subtle);
+        color: var(--accent); font-weight: 500; font-size: .78rem; letter-spacing: .01em;
       }
 
-      /* Sections */
-      section {
-        padding: var(--space) 0;
-        border-top: 1px solid var(--line);
+      /* ── Hand + WASD visualization ── */
+      .gesture-vis {
+        display: flex; flex-direction: column; align-items: center; gap: 1.8rem;
+        padding: 2rem; position: relative;
+      }
+      .hand-stage {
+        width: 200px; height: 220px; position: relative; display: flex; align-items: center; justify-content: center;
+      }
+      .hand-svg {
+        width: 160px; height: 180px;
+        transition: transform .6s var(--ease);
+        filter: drop-shadow(0 0 20px var(--accent-glow));
+      }
+      .hand-svg.tilt-up { transform: rotate(-15deg) translateY(-8px); }
+      .hand-svg.tilt-left { transform: rotate(-25deg) translateX(-10px); }
+      .hand-svg.tilt-down { transform: rotate(10deg) translateY(8px); }
+      .hand-svg.tilt-right { transform: rotate(20deg) translateX(10px); }
+      .hand-svg .palm { fill: var(--surface); stroke: var(--accent); stroke-width: 2; }
+      .hand-svg .finger { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linecap: round; }
+      .hand-svg .pulse-ring {
+        fill: none; stroke: var(--accent); stroke-width: 1;
+        opacity: 0; transform-origin: center;
+      }
+      .hand-svg .pulse-ring.active {
+        animation: pulse-out 1.2s var(--ease) forwards;
+      }
+
+      @keyframes pulse-out {
+        0% { opacity: .6; transform: scale(.8); }
+        100% { opacity: 0; transform: scale(1.6); }
+      }
+
+      .gesture-label {
+        font-family: var(--mono); font-size: .78rem; font-weight: 600;
+        color: var(--accent); text-align: center; letter-spacing: .06em;
+        text-transform: uppercase; min-height: 1.4em;
+        transition: opacity .3s var(--ease);
+      }
+
+      .wasd-grid {
+        display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(2, 1fr);
+        gap: 6px; width: fit-content;
+      }
+      .wasd-key {
+        width: 48px; height: 48px; display: grid; place-items: center;
+        border-radius: 10px; background: var(--surface-raised);
+        border: 1.5px solid var(--border); border-bottom-width: 3px;
+        font-weight: 700; font-family: var(--mono); font-size: 1rem;
+        color: var(--text-secondary);
+        transition: background .25s var(--ease), border-color .25s var(--ease), color .25s var(--ease), box-shadow .25s var(--ease);
+      }
+      .wasd-key.active {
+        background: var(--key-active-bg); border-color: var(--key-active-border);
+        color: var(--accent); box-shadow: 0 0 16px var(--accent-glow), inset 0 0 8px var(--accent-glow);
+      }
+      .wasd-key[data-key="W"] { grid-column: 2; grid-row: 1; }
+      .wasd-key[data-key="A"] { grid-column: 1; grid-row: 2; }
+      .wasd-key[data-key="S"] { grid-column: 2; grid-row: 2; }
+      .wasd-key[data-key="D"] { grid-column: 3; grid-row: 2; }
+
+      /* ── Sections ── */
+      section { padding: var(--space) 0; border-top: 1px solid var(--border); }
+      .section-label {
+        font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+        color: var(--accent); margin: 0 0 .6rem;
       }
       h2 {
-        font-size: clamp(1.6rem, 1.2rem + 1.5vw, 2.4rem);
-        letter-spacing: -0.02em;
-        margin: 0 0 2.2rem;
+        font-size: clamp(1.5rem, 1.1rem + 1.5vw, 2.2rem); font-weight: 700;
+        letter-spacing: -.02em; margin: 0 0 2rem; text-wrap: balance;
       }
-      .grid {
-        display: grid;
-        gap: 1rem;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+
+      /* ── Feature cards ── */
+      .cap-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+      .cap-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 1.4rem;
+        transition: transform .2s var(--ease), border-color .25s var(--ease), box-shadow .25s var(--ease);
       }
-      .card {
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-radius: var(--radius);
-        padding: 1.5rem;
-        transition:
-          transform 0.25s var(--ease),
-          border-color 0.25s var(--ease);
+      .cap-card:hover { transform: translateY(-3px); border-color: var(--border-hover); box-shadow: 0 8px 30px rgba(0,0,0,.15); }
+      .cap-card h3 { margin: 0 0 .3rem; font-size: 1.05rem; display: flex; align-items: center; gap: .5rem; }
+      .cap-card h3 .cap-icon { font-size: 1.2rem; }
+      .cap-desc { color: var(--text-secondary); font-size: .88rem; margin: 0; text-wrap: pretty; }
+
+      /* ── Pipeline ── */
+      .pipeline { display: flex; flex-direction: column; gap: 0; position: relative; }
+      .pipe-step {
+        display: grid; grid-template-columns: 56px 1fr; gap: 1rem; align-items: start;
+        opacity: 0; transform: translateX(-16px);
+        transition: opacity .45s var(--ease), transform .45s var(--ease);
       }
-      .card:hover {
-        transform: translateY(-4px);
+      .pipe-step.visible { opacity: 1; transform: translateX(0); }
+      .pipe-node {
+        display: flex; flex-direction: column; align-items: center; position: relative;
+      }
+      .pipe-num {
+        width: 40px; height: 40px; border-radius: 50%;
+        background: var(--accent-dim); color: var(--accent);
+        display: grid; place-items: center; font-weight: 700; font-size: .88rem;
+        font-variant-numeric: tabular-nums; border: 1.5px solid var(--border);
+        position: relative; z-index: 1;
+        transition: background .3s var(--ease), border-color .3s var(--ease), box-shadow .3s var(--ease);
+      }
+      .pipe-step.visible .pipe-num {
         border-color: var(--accent);
+        box-shadow: 0 0 12px var(--accent-glow);
       }
-      .card h3 {
-        margin: 0 0 0.5rem;
-        font-size: 1.15rem;
+      .pipe-line {
+        width: 2px; flex: 1; background: var(--border); margin-top: 4px;
+        min-height: 20px;
       }
-      .card p {
-        margin: 0;
-        color: var(--muted);
-        font-size: 0.96rem;
+      .pipe-step:last-child .pipe-line { display: none; }
+      .pipe-body {
+        background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 1rem 1.2rem; margin-bottom: 1rem;
+        transition: border-color .3s var(--ease);
       }
-      .ico {
-        font-size: 1.5rem;
-        margin-bottom: 0.7rem;
-        display: block;
-      }
-
-      /* keys */
-      .keys {
-        display: flex;
-        gap: 0.5rem;
-        justify-content: center;
-        margin: 0 0 2.2rem;
-      }
-      .key {
-        width: 2.6rem;
-        height: 2.6rem;
-        display: grid;
-        place-items: center;
-        border-radius: 10px;
-        background: var(--surface-2);
-        border: 1px solid var(--line);
-        border-bottom-width: 3px;
-        font-weight: 700;
-        font-family: 'SF Mono', ui-monospace, Menlo, monospace;
-        color: var(--accent-2);
+      .pipe-step.visible .pipe-body { border-color: var(--border-hover); }
+      .pipe-body strong { color: var(--text); }
+      .pipe-body p { margin: .2rem 0 0; color: var(--text-secondary); font-size: .88rem; }
+      .pipe-body code {
+        font-family: var(--mono); font-size: .78rem; background: var(--surface-raised);
+        border: 1px solid var(--border); border-radius: 5px; padding: .1rem .4rem;
       }
 
-      /* Steps */
-      .steps {
-        display: grid;
-        gap: 0.9rem;
-        counter-reset: step;
+      /* ── Games grid ── */
+      .games-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; }
+      .game-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 1.2rem; text-align: center;
+        transition: transform .2s var(--ease), border-color .25s var(--ease), box-shadow .25s var(--ease);
       }
-      .step {
-        display: flex;
-        gap: 1rem;
-        align-items: flex-start;
-        background: var(--surface);
-        border: 1px solid var(--line);
-        border-left: 3px solid var(--accent);
-        border-radius: var(--radius);
-        padding: 1rem 1.3rem;
-        transition: border-color 0.25s var(--ease);
+      .game-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
+      .game-icon { font-size: 1.6rem; margin-bottom: .5rem; display: block; }
+      .game-card h3 { margin: 0; font-size: .95rem; }
+      .game-card p { margin: .2rem 0 0; font-size: .78rem; color: var(--text-secondary); }
+
+      /* ── Install / quick-start ── */
+      .code-block {
+        position: relative; border: 1px solid var(--border); border-radius: var(--radius);
+        overflow: hidden; margin-bottom: 1rem;
       }
-      .step:hover {
-        border-left-color: var(--accent-2);
+      .code-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: .5rem .9rem; background: var(--surface); border-bottom: 1px solid var(--border);
+        font-size: .76rem; color: var(--text-secondary);
       }
-      .step::before {
-        counter-increment: step;
-        content: counter(step);
-        flex: 0 0 auto;
-        width: 2rem;
-        height: 2rem;
-        border-radius: 50%;
-        background: rgba(255, 45, 149, 0.16);
-        color: var(--accent);
-        display: grid;
-        place-items: center;
-        font-weight: 700;
+      .code-label { font-family: var(--mono); font-weight: 500; }
+      .copy-btn {
+        padding: .3rem .7rem; border-radius: 6px; border: 1px solid var(--border);
+        background: var(--surface-raised); font-family: var(--sans); font-size: .75rem;
+        font-weight: 600; color: var(--text-secondary); cursor: pointer;
+        transition: background .15s var(--ease), color .15s var(--ease), border-color .15s var(--ease);
+        min-height: 30px;
       }
-      .step p {
-        margin: 0;
-        color: var(--muted);
+      .copy-btn:hover { border-color: var(--border-hover); color: var(--text); }
+      .copy-btn:active { transform: scale(.96); }
+      .copy-btn.copied { border-color: var(--accent); color: var(--accent); }
+      .code-block pre {
+        background: var(--terminal-bg); margin: 0; padding: 1rem 1.1rem;
+        font-family: var(--mono); font-size: .82rem; line-height: 1.7;
+        color: var(--text); overflow-x: auto; border: none; border-radius: 0;
       }
-      .step strong {
-        color: var(--text);
+      .code-block .cf { color: var(--accent); }
+      .code-block .cc { color: var(--text-secondary); font-style: italic; }
+
+      .qs-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 1.5rem; }
+      .qs-card {
+        background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+        padding: 1.3rem 1.4rem; display: flex; gap: 1rem; align-items: flex-start;
+        transition: border-color .2s var(--ease);
       }
-      code {
-        font-family: 'SF Mono', ui-monospace, Menlo, monospace;
-        background: var(--surface-2);
-        border: 1px solid var(--line);
-        border-radius: 6px;
-        padding: 0.1rem 0.4rem;
-        font-size: 0.85em;
+      .qs-card:hover { border-color: var(--border-hover); }
+      .qs-num {
+        flex: 0 0 auto; width: 2rem; height: 2rem; border-radius: 8px;
+        background: var(--accent-subtle); color: var(--accent); display: grid; place-items: center;
+        font-weight: 700; font-size: .85rem; font-variant-numeric: tabular-nums;
+      }
+      .qs-card strong { color: var(--text); display: block; margin-bottom: .2rem; }
+      .qs-card p { margin: 0; color: var(--text-secondary); font-size: .88rem; text-wrap: pretty; }
+      .qs-card code {
+        font-family: var(--mono); font-size: .78rem; background: var(--surface-raised);
+        border: 1px solid var(--border); border-radius: 5px; padding: .1rem .4rem;
       }
 
-      /* video */
+      /* ── Video ── */
       .frame {
-        position: relative;
-        width: 100%;
-        padding-top: 56.25%;
-        border-radius: var(--radius);
-        overflow: hidden;
-        border: 1px solid var(--line);
-        background: #000;
+        position: relative; width: 100%; padding-top: 56.25%;
+        border-radius: var(--radius); overflow: hidden;
+        border: 1px solid var(--border); background: #000;
       }
       .frame iframe {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        border: 0;
+        position: absolute; inset: 0; width: 100%; height: 100%; border: 0;
       }
 
-      pre {
-        background: var(--surface-2);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 1.1rem 1.3rem;
-        overflow-x: auto;
-        margin: 0 0 1.6rem;
-        font-size: 0.86rem;
-        line-height: 1.7;
-        color: var(--text);
-        font-family: 'SF Mono', ui-monospace, 'Cascadia Code', Menlo, monospace;
-      }
-      pre .c {
-        color: var(--muted);
-      }
-      pre .p {
-        color: var(--accent-2);
-      }
+      /* ── Scroll reveal ── */
+      .reveal { opacity: 0; transform: translateY(20px); transition: opacity .5s var(--ease), transform .5s var(--ease); }
+      .reveal.visible { opacity: 1; transform: translateY(0); }
 
-      /* Portfolio nav */
-      .nav-home {
-        position: fixed;
-        top: 1rem;
-        left: 1rem;
-        z-index: 50;
-        display: flex;
-        gap: 0.5rem;
-      }
-      .nav-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        padding: 0.5rem 0.9rem;
-        border-radius: 999px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-        text-decoration: none;
-        color: var(--text);
-        background: var(--surface);
-        background: color-mix(in srgb, var(--surface) 82%, transparent);
-        border: 1px solid var(--line);
-        -webkit-backdrop-filter: blur(8px);
-        backdrop-filter: blur(8px);
-        transition:
-          transform 0.2s var(--ease),
-          border-color 0.2s var(--ease),
-          background 0.2s var(--ease);
-      }
-      .nav-btn:hover {
-        transform: translateY(-2px);
-        border-color: var(--accent);
-      }
-
+      /* ── Footer ── */
       footer {
-        text-align: center;
-        color: var(--muted);
-        padding: 3rem 0;
-        border-top: 1px solid var(--line);
-        font-size: 0.9rem;
+        text-align: center; color: var(--text-secondary); padding: 2.5rem 0;
+        border-top: 1px solid var(--border); font-size: .85rem;
       }
-      footer a {
-        color: var(--text);
-        text-decoration: none;
-        border-bottom: 1px solid var(--line);
+      footer a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--border); }
+      footer a:hover { border-color: var(--accent); }
+      footer p { margin: .3rem 0; }
+
+      /* ── Responsive ── */
+      @media (max-width: 860px) {
+        .hero-inner { grid-template-columns: 1fr; text-align: center; }
+        .hero-text .tagline { margin-left: auto; margin-right: auto; }
+        .hero-actions { justify-content: center; }
+        .hero-stack { justify-content: center; }
+        .cap-grid { grid-template-columns: 1fr; }
+        .games-grid { grid-template-columns: repeat(2, 1fr); }
+        .qs-grid { grid-template-columns: 1fr; }
+        .gesture-vis { margin-top: 1rem; }
+        .hand-stage { width: 160px; height: 180px; }
+        .hand-svg { width: 130px; height: 150px; }
+        .wasd-key { width: 42px; height: 42px; font-size: .9rem; }
       }
+
       @media (prefers-reduced-motion: reduce) {
-        * {
-          transition: none !important;
-          scroll-behavior: auto;
-        }
+        *, *::before, *::after { animation-duration: 0s !important; transition-duration: 0s !important; }
+        html { scroll-behavior: auto; }
+        .reveal { opacity: 1; transform: none; }
+        .pipe-step { opacity: 1; transform: none; }
+        .hand-svg { transition: none; }
+        .wasd-key { transition: none; }
       }
     </style>
   </head>
   <body>
+    <!-- Portfolio nav (hidden unless ?ref=portfolio) -->
     <nav class="nav-home" id="navHome" hidden aria-label="Back to portfolio">
-      <a class="nav-btn" id="navBack" href="https://karantrehan3.github.io/" rel="noopener">← Back</a>
-      <a class="nav-btn" href="https://karantrehan3.github.io/" rel="noopener">⌂ Home</a>
+      <a class="nav-btn" id="navBack" href="https://karantrehan3.github.io/" rel="noopener">&#8592; Back</a>
+      <a class="nav-btn" href="https://karantrehan3.github.io/" rel="noopener">&#8962; Home</a>
     </nav>
+
+    <!-- Theme toggle -->
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light/dark theme">
+      <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+
+    <!-- Hero -->
     <header class="hero">
       <div class="wrap">
-        <svg class="badge" viewBox="0 0 132 132" role="img" aria-label="Hand gesture gaming icon">
-          <defs>
-            <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stop-color="#1f1a2e" />
-              <stop offset="1" stop-color="#0c0a14" />
-            </linearGradient>
-            <linearGradient id="hand" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" stop-color="#ff2d95" />
-              <stop offset="1" stop-color="#22d3ee" />
-            </linearGradient>
-          </defs>
-          <rect x="2" y="2" width="128" height="128" rx="30" fill="url(#bg)" stroke="#2c2640" />
-          <g fill="none" stroke="url(#hand)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="50" y="70" width="40" height="30" rx="12" fill="#161320" />
-            <line x1="56" y1="72" x2="56" y2="50" />
-            <line x1="66" y1="72" x2="66" y2="42" />
-            <line x1="76" y1="72" x2="76" y2="44" />
-            <line x1="85" y1="74" x2="90" y2="56" />
-            <line x1="51" y1="80" x2="38" y2="70" />
-          </g>
-          <g stroke="#22d3ee" stroke-width="3" stroke-linecap="round" opacity="0.85">
-            <path d="M34 44 q-6 6 0 12" fill="none" />
-            <path d="M28 40 q-9 9 0 20" fill="none" opacity="0.5" />
-          </g>
-        </svg>
-        <h1>Hand Gesture Gaming</h1>
-        <p class="tagline">
-          A computer-vision project that reads your hand and steers the game — gestures mapped straight to the
-          W, A, S, D keys, in real time.
-        </p>
-        <div class="cta">
-          <a
-            class="btn btn-primary"
-            href="https://github.com/karantrehan3/Hand-Gesture-Recognition-Based-Interactive-Gaming"
-            >View on GitHub</a
-          >
-          <a class="btn btn-ghost" href="#tutorial">Watch the tutorial</a>
+        <div class="hero-inner">
+          <div class="hero-text">
+            <h1>Hand Gesture <span class="accent">Gaming</span></h1>
+            <p class="tagline">A computer-vision project that reads your hand and steers the game. Gestures mapped straight to the W, A, S, D keys, in real time.</p>
+            <div class="hero-actions">
+              <a class="btn btn-primary" href="https://github.com/karantrehan3/Hand-Gesture-Recognition-Based-Interactive-Gaming">View on GitHub</a>
+              <a class="btn btn-ghost" href="#demo">Watch demo</a>
+            </div>
+            <div class="hero-stack">
+              <span>Python</span> <span>OpenCV</span> <span>NumPy</span> <span>PyAutoGUI</span> <span>scikit-learn</span>
+            </div>
+          </div>
+
+          <!-- Interactive hand + WASD visualization -->
+          <div class="gesture-vis" role="img" aria-label="Animated hand gesture controlling WASD keys">
+            <div class="hand-stage">
+              <svg class="hand-svg" id="handSvg" viewBox="0 0 120 140" aria-hidden="true">
+                <!-- Pulse rings -->
+                <circle class="pulse-ring" id="pulseRing" cx="60" cy="80" r="50" />
+                <!-- Palm -->
+                <rect class="palm" x="30" y="65" width="60" height="48" rx="18" />
+                <!-- Fingers -->
+                <line class="finger" x1="40" y1="67" x2="40" y2="38" />
+                <line class="finger" x1="52" y1="67" x2="50" y2="28" />
+                <line class="finger" x1="64" y1="67" x2="66" y2="30" />
+                <line class="finger" x1="76" y1="67" x2="80" y2="36" />
+                <!-- Thumb -->
+                <line class="finger" x1="32" y1="80" x2="16" y2="66" />
+                <!-- Signal waves -->
+                <g id="signalWaves" opacity=".5">
+                  <path d="M96 55 q6 8 0 16" fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linecap="round" />
+                  <path d="M102 50 q9 13 0 26" fill="none" stroke="var(--accent)" stroke-width="1" stroke-linecap="round" opacity=".5" />
+                </g>
+              </svg>
+            </div>
+
+            <div class="wasd-grid" aria-hidden="true">
+              <div class="wasd-key" data-key="W">W</div>
+              <div class="wasd-key" data-key="A">A</div>
+              <div class="wasd-key" data-key="S">S</div>
+              <div class="wasd-key" data-key="D">D</div>
+            </div>
+
+            <div class="gesture-label" id="gestureLabel" aria-live="polite">Tilt up &#8594; W</div>
+          </div>
         </div>
-        <p class="platforms">
-          <strong>Python</strong> · OpenCV · NumPy · PyAutoGUI
-        </p>
       </div>
     </header>
 
     <main>
-      <section id="features">
+      <!-- Features -->
+      <section id="features" class="reveal">
         <div class="wrap">
-          <div class="keys" aria-hidden="true">
-            <span class="key">W</span>
-            <span class="key">A</span>
-            <span class="key">S</span>
-            <span class="key">D</span>
-          </div>
-          <h2>What it does</h2>
-          <div class="grid">
-            <div class="card">
-              <span class="ico">✋</span>
-              <h3>Gestures → keys</h3>
-              <p>
-                Hand position is translated into slope and distance, then mapped to W/A/S/D keypresses via
-                PyAutoGUI — your hand becomes the controller.
-              </p>
+          <p class="section-label">Capabilities</p>
+          <h2>Your hand becomes the controller</h2>
+          <div class="cap-grid">
+            <div class="cap-card">
+              <h3><span class="cap-icon" aria-hidden="true">&#9995;</span> Gestures to keys</h3>
+              <p class="cap-desc">Hand position is translated into slope and distance, then mapped to W/A/S/D keypresses via PyAutoGUI.</p>
             </div>
-            <div class="card">
-              <span class="ico">👁️</span>
-              <h3>Real computer vision</h3>
-              <p>
-                OpenCV captures the webcam feed, isolates your hand by colour, and tracks its contour frame by
-                frame to read each gesture.
-              </p>
+            <div class="cap-card">
+              <h3><span class="cap-icon" aria-hidden="true">&#128065;</span> Real computer vision</h3>
+              <p class="cap-desc">OpenCV captures the webcam feed, isolates your hand by colour, and tracks its contour frame by frame.</p>
             </div>
-            <div class="card">
-              <span class="ico">🎚️</span>
-              <h3>Tunable with trackbars</h3>
-              <p>
-                On-screen HSV trackbars let you dial in lighting and skin tone so only your hand is detected —
-                then flip Start to go live.
-              </p>
+            <div class="cap-card">
+              <h3><span class="cap-icon" aria-hidden="true">&#127902;</span> Tunable trackbars</h3>
+              <p class="cap-desc">On-screen HSV trackbars let you dial in lighting and skin tone so only your hand is detected.</p>
             </div>
-            <div class="card">
-              <span class="ico">🏎️</span>
-              <h3>Plays real games</h3>
-              <p>
-                Tested driving through Need for Speed, GTA 5, Blur and Spiderman — and the gesture mapping is
-                yours to customise.
-              </p>
+            <div class="cap-card">
+              <h3><span class="cap-icon" aria-hidden="true">&#127918;</span> Real games</h3>
+              <p class="cap-desc">Tested driving through Need for Speed, GTA 5, Blur, and Spiderman. The gesture mapping is yours to customise.</p>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="how">
+      <!-- Pipeline -->
+      <section id="pipeline" class="reveal">
         <div class="wrap">
-          <h2>How it works</h2>
-          <div class="steps">
-            <div class="step">
-              <p><strong>Camera init.</strong> <code>camera.py</code> starts the webcam and hands frames to the pipeline.</p>
+          <p class="section-label">Architecture</p>
+          <h2>How it works &mdash; the six-step pipeline</h2>
+          <div class="pipeline" id="pipeline">
+            <div class="pipe-step" data-delay="0">
+              <div class="pipe-node"><div class="pipe-num">1</div><div class="pipe-line"></div></div>
+              <div class="pipe-body">
+                <strong>Camera init</strong>
+                <p><code>camera.py</code> starts the webcam and hands frames to the pipeline.</p>
+              </div>
             </div>
-            <div class="step">
-              <p>
-                <strong>Tune HSV.</strong> <code>trackbars.py</code> exposes hue/saturation/value sliders so only
-                your hand stays visible against the background.
-              </p>
+            <div class="pipe-step" data-delay="120">
+              <div class="pipe-node"><div class="pipe-num">2</div><div class="pipe-line"></div></div>
+              <div class="pipe-body">
+                <strong>HSV calibration</strong>
+                <p><code>trackbars.py</code> exposes hue / saturation / value sliders so only your hand stays visible against the background.</p>
+              </div>
             </div>
-            <div class="step">
-              <p>
-                <strong>Process frames.</strong> <code>processing.py</code> finds the hand contour in each frame
-                using the tuned colour mask.
-              </p>
+            <div class="pipe-step" data-delay="240">
+              <div class="pipe-node"><div class="pipe-num">3</div><div class="pipe-line"></div></div>
+              <div class="pipe-body">
+                <strong>Frame processing</strong>
+                <p><code>processing.py</code> applies the tuned colour mask and finds the hand contour in each frame.</p>
+              </div>
             </div>
-            <div class="step">
-              <p>
-                <strong>Map &amp; press.</strong> <code>control.py</code> turns slope and distance into gestures,
-                and <code>directkeys.py</code> fires the matching keypress into the game.
-              </p>
+            <div class="pipe-step" data-delay="360">
+              <div class="pipe-node"><div class="pipe-num">4</div><div class="pipe-line"></div></div>
+              <div class="pipe-body">
+                <strong>Contour detection</strong>
+                <p>The largest contour is extracted and its extreme points are used to calculate slope and distance.</p>
+              </div>
+            </div>
+            <div class="pipe-step" data-delay="480">
+              <div class="pipe-node"><div class="pipe-num">5</div><div class="pipe-line"></div></div>
+              <div class="pipe-body">
+                <strong>Gesture mapping</strong>
+                <p><code>control.py</code> turns slope and distance values into one of four gestures: up, left, down, or right.</p>
+              </div>
+            </div>
+            <div class="pipe-step" data-delay="600">
+              <div class="pipe-node"><div class="pipe-num">6</div><div class="pipe-line"></div></div>
+              <div class="pipe-body">
+                <strong>Keyboard simulation</strong>
+                <p><code>directkeys.py</code> fires the matching W/A/S/D keypress into the active game window via ctypes.</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="install">
+      <!-- Games -->
+      <section id="games" class="reveal">
         <div class="wrap">
-          <h2>Install &amp; run</h2>
-          <pre><span class="c"># install the libraries (opencv, numpy, imutils, pyautogui, sklearn…)</span>
-cd src
-pip install <span class="p">-r</span> requirements.txt
+          <p class="section-label">Tested on</p>
+          <h2>Games you can play with gestures</h2>
+          <div class="games-grid">
+            <div class="game-card">
+              <span class="game-icon" aria-hidden="true">&#127950;</span>
+              <h3>Need for Speed</h3>
+              <p>Racing</p>
+            </div>
+            <div class="game-card">
+              <span class="game-icon" aria-hidden="true">&#127758;</span>
+              <h3>GTA 5</h3>
+              <p>Open world</p>
+            </div>
+            <div class="game-card">
+              <span class="game-icon" aria-hidden="true">&#128663;</span>
+              <h3>Blur</h3>
+              <p>Racing</p>
+            </div>
+            <div class="game-card">
+              <span class="game-icon" aria-hidden="true">&#128375;</span>
+              <h3>Spiderman</h3>
+              <p>Action</p>
+            </div>
+          </div>
+          <p style="margin-top:1.2rem; color: var(--text-secondary); font-size:.88rem; text-align:center;">Works with any game that uses W/A/S/D controls. Customise the mapping in <code style="font-family:var(--mono);font-size:.78rem;background:var(--surface-raised);border:1px solid var(--border);border-radius:5px;padding:.1rem .4rem;">control.py</code>.</p>
+        </div>
+      </section>
 
-<span class="c"># launch the app</span>
-python main.py</pre>
-          <div class="steps">
-            <div class="step">
-              <p>
-                <strong>Tune the mask.</strong> Drag the on-screen HSV trackbars until only your hand is visible
-                against the background.
-              </p>
+      <!-- Install -->
+      <section id="install" class="reveal">
+        <div class="wrap">
+          <p class="section-label">Get Started</p>
+          <h2>Running in under a minute</h2>
+
+          <div class="code-block">
+            <div class="code-header">
+              <span class="code-label">Install &amp; run</span>
+              <button class="copy-btn" aria-label="Copy to clipboard">Copy</button>
             </div>
-            <div class="step">
-              <p>
-                <strong>Go live.</strong> Set the <code>Start</code> trackbar to <code>1</code> to begin gesture
-                recognition and start driving.
-              </p>
+            <pre><code><span class="cc"># clone the repo</span>
+git clone https://github.com/karantrehan3/Hand-Gesture-Recognition-Based-Interactive-Gaming.git
+<span class="cf">cd</span> Hand-Gesture-Recognition-Based-Interactive-Gaming/src
+
+<span class="cc"># install dependencies</span>
+pip install <span class="cf">-r</span> requirements.txt
+
+<span class="cc"># launch</span>
+python main.py</code></pre>
+          </div>
+
+          <div class="qs-grid">
+            <div class="qs-card">
+              <div class="qs-num">1</div>
+              <div>
+                <strong>Tune the mask</strong>
+                <p>Drag the on-screen HSV trackbars until only your hand is visible against the background.</p>
+              </div>
             </div>
-            <div class="step">
-              <p>
-                <strong>For best results.</strong> Use a plain white or black background in a well-lit room — and
-                tweak the slope &amp; distance values in <code>control.py</code> to remap gestures to your liking.
-              </p>
+            <div class="qs-card">
+              <div class="qs-num">2</div>
+              <div>
+                <strong>Go live</strong>
+                <p>Set the <code>Start</code> trackbar to <code>1</code> to begin gesture recognition and start driving.</p>
+              </div>
+            </div>
+            <div class="qs-card">
+              <div class="qs-num">3</div>
+              <div>
+                <strong>Best environment</strong>
+                <p>Use a plain white or black background in a well-lit room for cleanest contour detection.</p>
+              </div>
+            </div>
+            <div class="qs-card">
+              <div class="qs-num">4</div>
+              <div>
+                <strong>Customise mappings</strong>
+                <p>Tweak slope &amp; distance thresholds in <code>control.py</code> to remap gestures to your liking.</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section id="tutorial">
+      <!-- Demo -->
+      <section id="demo" class="reveal">
         <div class="wrap">
-          <h2>Watch the tutorial</h2>
+          <p class="section-label">Demo</p>
+          <h2>Watch it in action</h2>
           <div class="frame">
             <iframe
               src="https://drive.google.com/file/d/1Xpey_UYsxnG0eSdDodW2cWsVR_jFOMq6/preview"
-              title="Hand gesture gaming tutorial video"
+              title="Hand gesture gaming demo video"
               loading="lazy"
               allow="autoplay"
               allowfullscreen
@@ -521,32 +650,145 @@ python main.py</pre>
 
     <footer>
       <div class="wrap">
-        <p>
-          Built with Python &amp; OpenCV ·
-          <a href="https://github.com/karantrehan3/Hand-Gesture-Recognition-Based-Interactive-Gaming">GitHub</a>
-          ·
-          <a
-            href="https://github.com/karantrehan3/Hand-Gesture-Recognition-Based-Interactive-Gaming/blob/main/LICENSE"
-            >MIT</a
-          >
-        </p>
-        <p>© 2021 Karan Trehan</p>
+        <p>Built with Python &amp; OpenCV &middot; <a href="https://github.com/karantrehan3/Hand-Gesture-Recognition-Based-Interactive-Gaming">GitHub</a> &middot; <a href="https://github.com/karantrehan3/Hand-Gesture-Recognition-Based-Interactive-Gaming/blob/main/LICENSE">MIT</a></p>
+        <p>&copy; 2021 Karan Trehan</p>
       </div>
     </footer>
+
     <script>
-      (function () {
-        if (new URLSearchParams(location.search).get('ref') !== 'portfolio') return;
+    (function () {
+      /* ── Portfolio nav ── */
+      if (new URLSearchParams(location.search).get('ref') === 'portfolio') {
         var nav = document.getElementById('navHome');
         if (nav) nav.removeAttribute('hidden');
         var back = document.getElementById('navBack');
-        if (back)
-          back.addEventListener('click', function (e) {
-            if (document.referrer && history.length > 1) {
-              e.preventDefault();
-              history.back();
+        if (back) back.addEventListener('click', function (e) {
+          if (document.referrer && history.length > 1) { e.preventDefault(); history.back(); }
+        });
+      }
+
+      /* ── Theme toggle ── */
+      var toggle = document.getElementById('themeToggle');
+      if (toggle) {
+        toggle.addEventListener('click', function () {
+          var root = document.documentElement;
+          var current = root.getAttribute('data-theme');
+          var isDark;
+          if (current) {
+            isDark = current === 'dark';
+          } else {
+            isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          }
+          var next = isDark ? 'light' : 'dark';
+          root.setAttribute('data-theme', next);
+          try { localStorage.setItem('theme', next); } catch (e) {}
+        });
+        /* Restore saved preference */
+        try {
+          var saved = localStorage.getItem('theme');
+          if (saved === 'light' || saved === 'dark') {
+            document.documentElement.setAttribute('data-theme', saved);
+          }
+        } catch (e) {}
+      }
+
+      /* ── Hand gesture animation ── */
+      var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      var handSvg = document.getElementById('handSvg');
+      var pulseRing = document.getElementById('pulseRing');
+      var label = document.getElementById('gestureLabel');
+      var keys = document.querySelectorAll('.wasd-key');
+
+      var gestures = [
+        { tilt: 'tilt-up', key: 'W', label: 'Tilt up → W' },
+        { tilt: 'tilt-left', key: 'A', label: 'Tilt left → A' },
+        { tilt: 'tilt-down', key: 'S', label: 'Tilt down → S' },
+        { tilt: 'tilt-right', key: 'D', label: 'Tilt right → D' }
+      ];
+      var gIdx = 0;
+
+      function clearGesture() {
+        handSvg.classList.remove('tilt-up', 'tilt-left', 'tilt-down', 'tilt-right');
+        keys.forEach(function (k) { k.classList.remove('active'); });
+      }
+
+      function showGesture() {
+        var g = gestures[gIdx];
+        gIdx = (gIdx + 1) % gestures.length;
+
+        clearGesture();
+        handSvg.classList.add(g.tilt);
+        label.textContent = g.label;
+
+        keys.forEach(function (k) {
+          if (k.getAttribute('data-key') === g.key) k.classList.add('active');
+        });
+
+        /* Pulse ring */
+        if (!reduceMotion) {
+          pulseRing.classList.remove('active');
+          void pulseRing.offsetWidth; /* reflow to restart animation */
+          pulseRing.classList.add('active');
+        }
+      }
+
+      if (reduceMotion) {
+        /* Show all states statically */
+        showGesture();
+      } else {
+        showGesture();
+        setInterval(showGesture, 2000);
+      }
+
+      /* ── Pipeline sequential reveal ── */
+      var pipeSteps = document.querySelectorAll('.pipe-step');
+      if (!reduceMotion && 'IntersectionObserver' in window) {
+        var pipeObs = new IntersectionObserver(function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              var steps = entry.target.querySelectorAll ? [entry.target] : [];
+              /* Find all steps in the pipeline section */
+              var allSteps = document.querySelectorAll('.pipe-step');
+              allSteps.forEach(function (step, i) {
+                var delay = parseInt(step.getAttribute('data-delay') || '0', 10);
+                setTimeout(function () { step.classList.add('visible'); }, delay);
+              });
+              pipeObs.disconnect();
             }
           });
-      })();
+        }, { threshold: 0.15 });
+        /* Observe the pipeline container */
+        var pipeContainer = document.getElementById('pipeline');
+        if (pipeContainer) pipeObs.observe(pipeContainer);
+      } else {
+        pipeSteps.forEach(function (s) { s.classList.add('visible'); });
+      }
+
+      /* ── Scroll reveal ── */
+      if (!reduceMotion && 'IntersectionObserver' in window) {
+        var obs = new IntersectionObserver(function (entries) {
+          entries.forEach(function (e) {
+            if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+          });
+        }, { threshold: 0.12 });
+        document.querySelectorAll('.reveal').forEach(function (el) { obs.observe(el); });
+      } else {
+        document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('visible'); });
+      }
+
+      /* ── Copy buttons ── */
+      document.querySelectorAll('.copy-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var code = btn.closest('.code-block').querySelector('code');
+          var text = code ? code.textContent : '';
+          navigator.clipboard.writeText(text).then(function () {
+            btn.textContent = 'Copied!';
+            btn.classList.add('copied');
+            setTimeout(function () { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1500);
+          });
+        });
+      });
+    })();
     </script>
   </body>
 </html>
