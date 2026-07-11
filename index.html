@@ -105,28 +105,18 @@
       /* ── Theme toggle ── */
       .theme-toggle {
         position: fixed; top: 1rem; right: 1rem; z-index: 50;
-        width: 38px; height: 38px; border-radius: 50%;
-        background: color-mix(in srgb, var(--surface) 90%, transparent);
-        border: 1.5px solid var(--border-hover); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-        box-shadow: 0 2px 8px rgba(0,0,0,.15), 0 0 0 1px rgba(255,255,255,.04);
-        display: grid; place-items: center; cursor: pointer;
+        width: 2.4rem; height: 2.4rem; border-radius: 50%;
+        border: 1px solid var(--border);
+        background: color-mix(in srgb, var(--surface) 85%, transparent);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        cursor: pointer; display: grid; place-items: center;
+        font-size: 1.15rem; line-height: 1; padding: 0;
+        color: var(--text); font-family: var(--sans);
         transition: transform .2s var(--ease), border-color .2s var(--ease), box-shadow .2s var(--ease);
-        color: var(--text); font-size: 1rem; line-height: 1;
       }
-      .theme-toggle:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 4px 16px var(--accent-glow); }
-      .theme-toggle .icon-sun, .theme-toggle .icon-moon { position: absolute; transition: opacity .2s; }
-      :root[data-theme="light"] .theme-toggle .icon-sun { opacity: 0; }
-      :root[data-theme="light"] .theme-toggle .icon-moon { opacity: 1; }
-      :root[data-theme="dark"] .theme-toggle .icon-sun { opacity: 1; }
-      :root[data-theme="dark"] .theme-toggle .icon-moon { opacity: 0; }
-      @media (prefers-color-scheme: light) {
-        :root:not([data-theme]) .theme-toggle .icon-sun { opacity: 0; }
-        :root:not([data-theme]) .theme-toggle .icon-moon { opacity: 1; }
-      }
-      @media (prefers-color-scheme: dark) {
-        :root:not([data-theme]) .theme-toggle .icon-sun { opacity: 1; }
-        :root:not([data-theme]) .theme-toggle .icon-moon { opacity: 0; }
-      }
+      .theme-toggle:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: 0 4px 16px rgba(0,0,0,.15); }
+      .theme-toggle:active { transform: scale(.95); }
+      .theme-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
       /* ── Hero ── */
       .hero { position: relative; padding: clamp(3.5rem, 2rem + 5vw, 6rem) 0 var(--space); overflow: hidden; }
@@ -412,10 +402,7 @@
     </nav>
 
     <!-- Theme toggle -->
-    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle light/dark theme">
-      <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-      <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-    </button>
+    <button class="theme-toggle" id="themeToggle" aria-label="Switch to light mode" title="Toggle theme"></button>
 
     <!-- Hero -->
     <header class="hero">
@@ -685,28 +672,27 @@ python main.py</code></pre>
 
       /* ── Theme toggle ── */
       var toggle = document.getElementById('themeToggle');
-      if (toggle) {
-        toggle.addEventListener('click', function () {
-          var root = document.documentElement;
-          var current = root.getAttribute('data-theme');
-          var isDark;
-          if (current) {
-            isDark = current === 'dark';
-          } else {
-            isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-          }
-          var next = isDark ? 'light' : 'dark';
-          root.setAttribute('data-theme', next);
-          try { localStorage.setItem('theme', next); } catch (e) {}
-        });
-        /* Restore saved preference */
-        try {
-          var saved = localStorage.getItem('theme');
-          if (saved === 'light' || saved === 'dark') {
-            document.documentElement.setAttribute('data-theme', saved);
-          }
-        } catch (e) {}
+      var root = document.documentElement;
+
+      function getEffectiveTheme() {
+        var stored = localStorage.getItem('theme');
+        if (stored === 'light' || stored === 'dark') return stored;
+        return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
       }
+
+      function applyTheme(theme) {
+        root.setAttribute('data-theme', theme);
+        toggle.textContent = theme === 'dark' ? '☀️' : '🌙';
+        toggle.setAttribute('aria-label', theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+      }
+
+      applyTheme(getEffectiveTheme());
+
+      toggle.addEventListener('click', function () {
+        var next = getEffectiveTheme() === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('theme', next);
+        applyTheme(next);
+      });
 
       /* ── Hand gesture animation ── */
       var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
